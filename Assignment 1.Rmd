@@ -1,0 +1,99 @@
+---
+title: "DATA 607 -  Assignment 1"
+author: "Sie Siong Wong"
+date: "8/29/2019"
+output: html_document
+---
+
+#### Read the data file from my GitHub.
+
+```{r}
+
+df <- read.csv("https://raw.githubusercontent.com/SieSiongWong/DATA-607/master/agaricus-lepiota.data", header=TRUE, sep=",")
+
+```
+
+#### First of all, lets take a look at the structure of the Mushroom Data Set. There are total of 8,123 observations and have 23 variables in this dataset. In this data frame, all columns are factor type. 
+
+```{r}
+
+str(df)
+
+```
+
+#### Update all columns name to be readable and meaningful.
+
+```{r}
+
+colnames(df) <- c("Edible", " CapShape", "CapSurface", "CapColor", "Bruises", "Odor", "GillAttachment", "GillSpacing", "GillSize", "GillColor", "StalkShape", "StalkRoot", "StalkSurfaceAboveRing", "StalkSurfaceBelowRing", "StalkColorAboveRing", "StalkColorBelowRing", "VeilType", "VeilColor", "RingNumber", "RingType", "SporePrintColor", "Population", "Habitat")
+
+```
+
+#### Replace abbreviations used in the columns with a meaningful descriptive words.
+
+```{r}
+
+## Replace abbreviations for the Edible column with yes =  Edible, and no =  Not Edible (Poisonous).
+
+levels(df$Edible)[levels(df$Edible) %in%  c("e","p")] <- c("yes","no")
+
+## Replace abbreviations for the Odor column with almond=a,anise=l,creosote=c,fishy=y,foul=f, musty=m,none=n,pungent=p,spicy=s.
+
+levels(df$Odor)[levels(df$Odor) %in%  c("a","l","c","y","f","m","n","p","s")] <- c("almond","anise","creosote","fishy","foul","musty","none","pungent","spicy")
+
+## Replace abbreviations for the Spore print Color column with black=k,brown=n,buff=b,chocolate=h,green=r, orange=o,purple=u,white=w,yellow=y.
+
+levels(df$SporePrintColor)[levels(df$SporePrintColor) %in%  c("k","n","b","h","r","o","u","w","y")] <- c("black","brown","buff","chocolate","green","orange","purple","white","yellow")
+
+## Replace abbreviations for the Stalk Surface Below Ring column with fibrous=f,scaly=y,silky=k,smooth=s.
+
+levels(df$StalkSurfaceBelowRing)[levels(df$StalkSurfaceBelowRing) %in%  c("f","y","k","s")] <- c("fibrous","scaly","silky","smooth")
+
+## Replace abbreviations for the Stalk Color Above Ring column with brown=n,buff=b,cinnamon=c,gray=g,orange=o, pink=p,red=e,white=w,yellow=y.
+
+levels(df$StalkColorAboveRing)[levels(df$StalkColorAboveRing) %in%  c("n","b","c","g","o","p","e","w","y")] <- c("brown","buff","cinnamon","gray","orange","pink","red","white","yellow")
+
+## Replace abbreviations for the Cap Color column with brown=n,buff=b,cinnamon=c,gray=g,green=r,pink=p,purple=u,red=e,white=w,yellow=y.
+
+levels(df$CapColor)[levels(df$CapColor) %in%  c("n","b","c","g","r","p","u","e","w","y")] <- c("brown","buff","cinnamon","gray","green","pink","purple","red","white","yellow")
+
+## Replace abbreviations for the Habitat column with grasses=g,leaves=l,meadows=m,paths=p, urban=u,waste=w,woods=d.
+
+levels(df$Habitat)[levels(df$Habitat) %in%  c("g","l","m","p","u","w","d")] <- c("grasses","leaves","meadows","path","urban","waste","woods")
+
+```
+
+#### Subset for those columns without abbreviations.
+
+```{r, message=FALSE}
+
+library(dplyr)
+
+df2 <- subset(df, select=c("Edible", "Odor","SporePrintColor","StalkSurfaceBelowRing", "StalkColorAboveRing","CapColor","Habitat"))
+
+## Reorder the column names in alphabetical order.
+
+df2 <- df2 %>% select(sort(names(.)))
+
+## Or sort the data frame by Edible column to split the transformed data into edible and poisonous mushrooms.
+
+df2 <- df2[order(df2$Edible),]
+
+## Display some rows to see the transformation done in above steps.
+
+head(arrange(df2, desc(Edible)),n=15)
+
+
+## Note: The reasons I chose to transform the CapColor, Odor,SporePrintColor, StalkSurfaceBelowRing, StalkColorAboveRin, and Habitat because as mentioned by one of the researchers, Wlodzislaw Duch, from Nicholas Copernicus University in Poland, come out with 4 disjunctive rules for poisonous mushrooms.
+
+ ## 1.) odor=NOT(almond.OR.anise.OR.none): 120 poisonous cases missed, 98.52% accuracy
+ ## 2.) spore-print-color=green: 48 cases missed, 99.41% accuracy
+ ## 3.) odor=none.AND.stalk-surface-below-ring=scaly.AND.(stalk-color-above-ring=NOT.brown): 8   cases missed, 99.90% accuracy
+ ## 4.) habitat=leaves.AND.cap-color=white : 100% accuracy
+
+           
+```
+
+
+
+
