@@ -1,0 +1,184 @@
+---
+title: "Assignment 3"
+author: "Sie Siong Wong"
+date: "9/10/2019"
+output: html_document
+---
+
+3. Copy the introductory example. The vector name stores the extracted names.
+
+Question 1: Use the tools of this chapter to rearrange the vectors so that all elements conform to the standard: first_name last_name.
+
+#### Answer:
+
+```{r, eval=TRUE}
+
+library(stringr)
+  
+raw.data <- "555-1239Moe Szyslak(636) 555-0113Burns, C. Montgomery555
+-6542Rev. Timothy Lovejoy555 8904Ned Flanders636-555-3226Simpson, Homer5553642Dr. Julius Hibbert"
+
+## Extract only the names from raw data.
+firstlast <- unlist(str_extract_all(raw.data, "[[:alpha:]., ]{2,}"))
+
+## Using the sub function to find the title ending with period and remove them.
+firstlast2 <- sub("[[:alpha:]]{2,3}\\. ","",firstlast)
+
+## Using the sub function to find the second name ending with period and remove them.
+firstlast3 <- sub(" [[:alpha:]]{1,}\\.? "," ",firstlast2)
+
+## Using the sub function to find the last name comma first name and using backreferencing to revert the order and remove the comma.
+firstlast4 <-sub("([[:alnum:]_]+),[[:blank:]]([[:alnum:]_]+)","\\2 \\1", firstlast3)
+firstlast4
+
+
+```
+
+Question 2: Construct a logical vector indicating whether a character has a little (i.e., Rev. and Dr.).
+
+#### Answer:
+
+```{r, eval=TRUE}
+
+title <- str_detect(firstlast, "[[:alpha:]]{2,3}\\. " )
+title2 <- data.frame(firstlast, title)
+title2
+
+```
+
+Question 3: Construct a logical vector indicating whether a character has a second name.
+
+```{r, eval=TRUE}
+
+secondname <- str_detect(firstlast, " [[:alpha:]]{1,}\\. ")
+secondname2 <- data.frame(firstlast, secondname)
+secondname2
+
+
+```
+
+4. Describe the types of strings that conform to the following regular expressions and construct an example that is matched by the regular expression.
+
+Question 1: [0-9]+\\$
+
+#### Answer:
+
+###### [0-9] matches any single character between 0 and 9 and with + sign adding to it [0-9]+ will match one or more digits.
+
+###### \\$ Including double backslash in order to use the dollar sign literally.
+
+```{r, eval=TRUE}
+
+library(stringr)
+example <- c("1235$", "4343$$")
+example2 <- c("I have 9999$")
+str_detect(example, "[0-9]+\\$")
+str_extract(example2, "[0-9]+\\$")
+
+```
+
+Question 2: \\b[a-z]{1,4}\\b
+
+#### Answer:
+
+###### start with \\b end with \\b meaning start of word boundary and end of word boundary.
+###### [a-z]{1,4} lowercase letters with at least letter to no more than 4 letter.
+
+```{r, eval=TRUE}
+library (stringr)
+example3 <- c("no", "good")
+str_detect(example3, "\\b[a-z]{1,4}\\b")
+str_extract(example3, "\\b[a-z]{1,4}\\b")
+
+```
+
+
+Question 3: .*?\\.txt$
+
+#### Answer:
+
+###### .*?\\. match none or more characters as few times as possible before .txt.
+
+##### \\.txt$ ending with string .txt.
+
+```{r, eval=TRUE}
+
+library (stringr)
+example4 <- c("4tU.txt","I Have a .txt", " .txt")
+str_detect(example4, ".*?\\.txt$")
+str_extract(example4, ".*?\\.txt$")
+
+```
+
+
+Question 4: \\d{2}/\\d{2}/\\d{4}
+
+#### Answer:
+
+###### \\d{2} any two digits, \\d{4} any four digits. This seems to be number format for date where day/month/year.
+
+```{r, eval}
+
+library (stringr)
+example5 <- c("02/13/2005","09/01/2018")
+str_detect(example5, "\\d{2}/\\d{2}/\\d{4}")
+str_extract(example5, "\\d{2}/\\d{2}/\\d{4}")
+
+```
+
+Question 5: <(.+?)>.+?</\\1>
+
+#### Answer:
+
+###### .+? match one or more characters with the angle brackets and after the brackets.
+###### \\1 backreferencing to the defined group 1 which has the parenthesis on it.
+
+
+```{r, eval=TRUE}
+
+library (stringr)
+example6 <- c("<tag>Hello World</tag>", "<listen>to wonderful music</listen>")
+str_detect(example6, "<(.+?)>.+?</\\1>")
+str_extract(example6, "<(.+?)>.+?</\\1>")
+
+
+```
+
+9. The following code hides a secret message. Crack it with R and regular expressions.
+Hint: Some of the characters are more revealing than others! The code snippet is also
+available in the materials at www.r-datacollection.com.
+
+clcopCow1zmstc0d87wnkig7OvdicpNuggvhryn92Gjuwczi8hqrfpRxs5Aj5dwpn0Tanwo
+Uwisdij7Lj8kpf03AT5Idr3coc0bt7yczjatOaootj55t3Nj3ne6c4Sfek.r1w1YwwojigO
+d6vrfUrbz2.2bkAnbhzgv4R9i05zEcrop.wAgnb.SqoU65fPa1otfb7wEm24k6t3sR9zqe5
+fy89n6Nd5t9kc4fE905gmc4Rgxo5nhDk!gr
+
+#### Answer:
+
+```{r, eval=TRUE}
+
+secret_message <- "clcopCow1zmstc0d87wnkig7OvdicpNuggvhryn92Gjuwczi8hqrfpRxs5Aj5dwpn0Tanwo
+Uwisdij7Lj8kpf03AT5Idr3coc0bt7yczjatOaootj55t3Nj3ne6c4Sfek.r1w1YwwojigO
+d6vrfUrbz2.2bkAnbhzgv4R9i05zEcrop.wAgnb.SqoU65fPa1otfb7wEm24k6t3sR9zqe5
+fy89n6Nd5t9kc4fE905gmc4Rgxo5nhDk!gr"
+
+## Extract all letters.
+secret_message2 <- unlist(str_extract_all(secret_message,"[[:alpha:]]{1,}"))
+
+## Extract all uppercase letters.
+secret_message3 <- unlist(str_extract_all(secret_message2,"[[:upper:]]{1,}"))
+
+## Combine all letters.
+secret_message4 <- str_c(secret_message3,collapse="")
+
+## Separate into words.
+secret_message5 <-unlist(str_extract_all(secret_message4, "CONGRATULATIONS|YOU|ARE|SUPERNERD"))
+
+## Combine into a single sentence.
+secret_message6 <- str_c(secret_message5,collapse=" ")
+
+## Print the secret message.
+secret_message6
+
+
+```
