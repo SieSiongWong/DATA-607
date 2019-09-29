@@ -1,0 +1,97 @@
+---
+title: "Assignment Week 5"
+author: "Sie Siong Wong"
+date: "9/28/2019"
+output: html_document
+---
+
+#### Load the original data file from GitHub.
+
+```{r, eval=TRUE}
+
+flights <- read.csv("https://raw.githubusercontent.com/SieSiongWong/DATA-607/master/Flight.csv", header=TRUE, sep=",", na.strings=c(""," ","NA"))
+
+```
+
+#### Load the packages required to tidy and transform the data.
+
+```{r, eval=TRUE, message=FALSE}
+
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(plyr)
+library(zoo)
+library(reshape2)
+
+```
+
+#### Review the dataset.
+
+```{r, eval=TRUE}
+
+flights
+str(flights)
+
+```
+
+#### Clean the data.
+
+```{r, eval=TRUE}
+
+## Rename the first two columns.
+flights <- rename(flights, c("X"="Airline", "X.1"="Status"))
+
+## Drop the 3rd row.
+flights2 <- flights[-c(3),]
+
+## Replace NA in the Airline column with the value prior to it.
+flights2 <- flights2 %>% mutate(Airline=na.locf(Airline))
+
+## Reorder the dataframe.
+rownames(flights2) <- 1:nrow(flights2)
+
+```
+
+#### Rehape the clean data.
+
+```{r, eval=TRUE}
+
+## Since the city names which columns are not variables, it is better to collapse the column 3 to 7 into a column and then pull their values into their own columns, Delayed and OnTime.
+flights3 <- flights2  %>% gather(Destination, value, 3:7) %>% spread(Status, value)
+
+## Rename the delayed and on time columns.
+flights3 <- rename(flights3, c("delayed"="Delayed", "on time"="OnTime"))
+
+## Add new column Total and perform the proportion of delayed into another column Proportion_Delayed.
+flights4 <- mutate(flights3, Total=Delayed+OnTime, Proportion_Delayed=Delayed/Total)
+
+```
+
+#### Arrival delays analysis for the two airlines.
+
+```{r, eval=TRUE, warning=FALSE}
+
+## Figure 1: Barplot arrival delays by city airports.
+
+ggplot(flights4, aes(x = Destination, y = Proportion_Delayed, fill = Airline)) + geom_bar(stat="identity", position="dodge") + xlab("Destination") + ylab("Proportion Delayed") + scale_fill_brewer(palette = "Set2")
+
+## Table 1: Airline Performance by Conditional Distribution.
+flights5 <- flights4[,c(1,3:4)]
+flights6 <- flights5 %>% group_by(Airline) %>% summarize_each(funs(sum))
+PerformanceTable <- matrix(c(flights6$Delayed,flights6$OnTime),ncol=2,nrow=2,byrow=FALSE)
+dimnames(PerformanceTable) = list(c("Alaska", "Am WEST"), c("Delayed", "OnTime"))
+round(prop.table(PerformanceTable,2)*100, digits=2)
+
+## Figure 2: Barplot for Airline Performance by Conditional Distribution.
+barplot(prop.table(PerformanceTable,2)*100, beside=T, ylab="%", ylim=c(0,100), main="Flight Performance", col=c("deepskyblue", "darkorchid1"))
+legend("center", legend = c("ALASKA", "AM WEST"), fill = c("deepskyblue", "darkorchid1"),cex=0.85)
+
+```
+
+#### Conclusions:
+
+##### **From the figure 1 , you can easily see that Am West airline which arrival delays occur more frequently than Alask airline. Also, both airlines have the highest arrival delay rate at San Francisco airport and the lowest arrival delay rate at Phoenix airport.**
+
+##### **From table 1 and figure 2, you can see that Alaska Airline which performance is much better than Am West airline. The Am West airline is about 22% more likely to be delayed than the Alaska airline. Also, the Alaska airline is about 32% more likely to be on time than the Am West airline.**
+
