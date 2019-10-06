@@ -1,0 +1,95 @@
+---
+title: "Project 2 - Income Distribution by Religious Group Dataset"
+author: "Sie Siong Wong"
+date: "10/3/2019"
+output: html_document
+---
+
+### As mentioned by the classmate (Shovan Biswas) who posted this dataset would like to tidy this dataset into 3 variables religion, income and frequency. The sample size is based on the religion distribution across the United States. There are more analysis can be done besides tidying the data such as:
+
+#####  **(1) For each income level, identify which religion has the highest and lowest household income.**
+
+#####  **(2) Figure out which income level has the highest variation.**
+
+
+### Load the original data file from GitHub.
+
+```{r, eval=TRUE}
+
+IncomeReligious <- read.csv("https://raw.githubusercontent.com/SieSiongWong/DATA-607/master/Income%20Distirbution%20by%20Religious%20Group.csv", header=TRUE, sep=",",)
+
+```
+
+### Load the packages required to tidy and transform the data.
+
+```{r, eval=TRUE, message=FALSE}
+
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(reshape2)
+library(stringr)
+
+```
+
+### Review the dataset.
+
+```{r, eval=TRUE, message=FALSE}
+
+IncomeReligious
+str(IncomeReligious)
+
+```
+
+### Clean the data.
+
+```{r, eval=TRUE, message=FALSE}
+
+## Remove the sample size as it's useless.
+IncomeReligious2 <- subset(IncomeReligious, select=-Sample.Size)
+
+## Rename the columns 1:5.
+IncomeReligious2 <- IncomeReligious2 %>% rename("Religion"="Religious.tradition", "Less than $30k"="Less.than..30.000", "$30k-$49,999"="X.30.000..49.999", "$50k-$99,999"="X.50.000..99.999", "Over $100k"="X.100.000.or.more")
+
+```
+
+### Rehape the clean data.
+
+```{r, eval=TRUE, message=FALSE, warning=FALSE}
+
+## Convert the dataset to long form by turning the column 2 to 5 into rows.
+IncomeReligious2 <- IncomeReligious2 %>% gather(Income, value,2:5)
+
+## Rename the column name value to Frequency.
+IncomeReligious2 <- rename(IncomeReligious2, "Frequency"="value")
+
+## Convert the frequency column into percentatge value.
+IncomeReligious2 <- IncomeReligious2 %>% transform(Frequency=as.numeric(unlist(str_extract(IncomeReligious2$Frequency,"[[:digit:]]{1,}"))))
+
+## Sort the religion column.
+IncomeReligious2 <- IncomeReligious2 %>% arrange(Religion, desc(Religion))
+IncomeReligious2
+
+```
+
+### Analyze the clean data.
+
+```{r, eval=TRUE, message=FALSE}
+
+## % of adults at each household income level for each religion bar plot:- Figure 1
+IncomeReligious2$Income <- factor(IncomeReligious2$Income, levels=c("Less than $30k", "$30k-$49,999", "$50k-$99,999", "Over $100k"))
+
+ggplot(IncomeReligious2, aes(x = Religion, y = Frequency, fill = Income)) + geom_bar(stat="identity", position = position_stack(reverse = FALSE)) + xlab("Religion") + ylab("% of Adults Household Income") + scale_fill_brewer(palette = "Set2") + coord_flip() + theme(legend.position = "top") +  geom_text(aes(label=Frequency), position = position_stack(vjust = .5), size = 3)
+
+## % of income distribution by religions at each income level box plot: Figure 2
+ggplot(IncomeReligious2, aes(x=reorder(factor(Income), Frequency, fun=median),y=Frequency,fill=factor(Income))) + geom_boxplot() + labs(title="% Income Distribution by Religions") + ylab("% Income Distribution") + theme(legend.position = "none", axis.title.x = element_blank(), axis.text.x=element_text(angle=45)) + theme(plot.title = element_text(hjust=0.5)) + theme(axis.text.x = element_text(margin = margin(t = 25, r = 20, b = 0, l = 0)))
+
+```
+
+### Conclusions:
+
+##### **From the figure 1, we can clearly see that at the income level "Less Than $30k", the Historically Black Protestant has the highest percentage, 53% and the Jewish has the lowest percentage,16%. For the income level "$30k-$49,999", the Jehovah's Witness has highest percentage, 25% and the Jewish has the lowest percentage, 15. For the income level "$50k-$99,999", the Orthodox Christian has the highest percentage, 36% and the Historically Black Protestant has the lowest percentage, 17%. For the income level "Over $100k", the Jewish has the highest percentage, 44% and the Jehovah's Witness has the lowest percentage, 4%.**
+
+##### **From the figure 2, we can see that the income level over $100k and the income level below $30k have huge variation of % income distribution. As we can see from the figure 1, this happens mainly because at the income level over $100k, the Jewish religion has much higher percentage compared to other. Same thing for income level below $30k that Historically Black Protestant and Jehovah's Witness religions have much higher percentage compared other.**
+
+
