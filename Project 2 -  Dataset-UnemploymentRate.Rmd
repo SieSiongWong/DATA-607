@@ -1,0 +1,113 @@
+---
+title: "Project 2 - Unemployment Rate Dataset"
+author: "Sie Siong Wong"
+date: "10/5/2019"
+output: html_document
+---
+
+### This dataset was posted by classmate(Erinda Budo). It contains unemployment rates from 88 countries from year 1990 through 2017. The required analysis is to investigate annual unemployment rates from year 2011 to 2015 to answer the following questions:
+
+#####  **(1) For the five year period from 2011 to 2015, what is the average annual unemployment rate for each country?**
+
+##### **(2) For the five year period from 2011 to 2015, what is the distribution of the average annual unemployment rate?**
+
+##### **(3) For the five year period from 2011 to 2015, what is the overall trend of the world's annual unemployment rate?**
+
+
+### Load the original data file from GitHub.
+
+```{r, eval=TRUE}
+
+UnemploymentRate <- read.csv("https://raw.githubusercontent.com/SieSiongWong/DATA-607/master/UnemploymentRate.csv", header=TRUE, sep=",",)
+
+```
+
+### Load the packages required to tidy and transform the data.
+
+```{r, eval=TRUE, message=FALSE}
+
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(reshape2)
+library(stringr)
+
+```
+
+### Review the dataset.
+
+```{r, eval=TRUE, message=FALSE}
+
+head(UnemploymentRate)
+
+```
+
+### Clean the data.
+
+```{r, eval=TRUE, message=FALSE}
+
+## Remove non-country columns..
+UnemploymentRate <- UnemploymentRate[, -c(2,22,23,26,33,46,47,55,58,69,72,84)]
+                                     
+## Rename the columns 1.
+UnemploymentRate <- UnemploymentRate %>% rename("Year"="X")
+
+## Remove the rows which year before 2011 and year after 2015.
+UnemploymentRate <- UnemploymentRate[-c(1:21,27:31),]
+
+## Reorder the data frame row number.
+rownames(UnemploymentRate) <- 1:nrow(UnemploymentRate)
+
+```
+
+### Rehape the clean data.
+
+```{r, eval=TRUE, message=FALSE}
+
+## Convert the dataset to long form and also eliminate NAs.
+UnemploymentRate <- UnemploymentRate %>% melt(UnemploymentRate, id.vars=c("Year"), measure.vars=2:ncol(UnemploymentRate), variable.name="Country", value.name="Unemployment_Rate", na.rm=TRUE)
+                                              
+## Removing dot in country column and replace with space.
+UnemploymentRate$Country <- sub("\\.{2}",", ", UnemploymentRate$Country)
+UnemploymentRate$Country <- sub("\\."," ", UnemploymentRate$Country)
+
+head(UnemploymentRate,n=15)
+tail(UnemploymentRate,n=15)
+
+```
+
+### Analyze the clean data.
+
+```{r, eval=TRUE, message=FALSE}
+                                              
+## Average annual unemployment rate for each country between year 2011 and 2015: Table 1.
+UnemploymentRate_Mean <- UnemploymentRate %>% group_by(Country) %>% summarize(Average=round(mean(Unemployment_Rate), digits=2))
+
+## The average of the overall country means.
+UnemploymentRate_AvgMean <- mean(UnemploymentRate_Mean$Average)
+
+## Standard deviation of the overall country means.
+UnemploymentRate_StdMean <- sd(UnemploymentRate_Mean$Average)
+
+## Plot a histogram to show the distribution of the average annual unemployment rate:- Figure 1.
+hist(UnemploymentRate_Mean$Average, main="Average Annual Unemployment Rate Distribution", xlab="Mean", ylab="Frequency", ylim=c(0,25), col="hotpink", breaks = 15)
+
+## Using a density histogram to overlay a standard normal curve over the histogram:- Figure 2.
+hist(UnemploymentRate_Mean$Average, main="Average Annual Unemployment Rate Distribution", xlab="Mean", ylab="Density",  col="hotpink", breaks = 15, probability=TRUE)
+x <- 0:20
+y <- dnorm(x=x, mean=UnemploymentRate_AvgMean, sd=UnemploymentRate_StdMean)
+lines(x=x,y=y, col="blue")
+
+## Plot a normal Q-Q Plot to further show that the distribution of the average annual unemployment rate is right skewed:- Figure 3.
+qqnorm(UnemploymentRate_Mean$Average)
+qqline(UnemploymentRate_Mean$Average)
+
+```
+
+### Conclusions:
+
+##### **From the figure 1 we can see that the distribution of average annual unemployment rate is right skewed. From the figure 2, we can also see that a normal distribution does not properly overlay on the histogram. Furthermore, in Q-Q plot all the points have to fall very close to the theoretical line to be considered as normally distributed. But in the figure 3, we can see that many points are not closely follow the theoretical line and with a clear curvature in the points. This could be due to the regular discrete values in the dataset. Therefore, the average annual unemployment rate may not appear to come from a normal distribution**
+
+##### **The right skewed distribution means that the average annual unemployment rates fall toward the lower side of the scale. Therefore, we can conclude that the overall trend of the world's annual unemployment rate was declining.**
+
+
