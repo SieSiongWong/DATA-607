@@ -1,0 +1,240 @@
+---
+title: "Project 2 - Marijuana Arrest Dataset"
+author: "Sie Siong Wong"
+date: "10/6/2019"
+output: html_document
+---
+
+### The goal of doing analyis on this Marijuana Arrests dataset is to find out the answers for the following questions. 
+
+##### **(1) Figure out which race was arrested significantly more than the other for simple possession of small quantities of marijuana in Toronto between year 1997 and 2002.**
+
+##### **(2) Whether police released on summons based on previous records of arrest or based on other factors.**
+
+##### **(3) And whether there is a particular group of individuals were arrested more than the other. The factors to consider in this analysis would be such as their race, age, gender, citizen status, and employment status.**
+
+
+### Load the original data file from GitHub.
+
+```{r}
+
+ArrestMarij <- read.csv("https://raw.githubusercontent.com/SieSiongWong/DATA-607/master/Arrests.csv", header=TRUE, sep=",")
+
+```
+
+### Load the packages required to tidy and transform the data.
+
+```{r, message=FALSE}
+
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(reshape2)
+
+```
+
+### Review the dataset.
+
+#### There are total of 5,226 observations and have 8 actual variables (not including the number list) in this dataset. In this data frame, it has 3 numeric type columns and 5 character type columns (not including the number list). 
+
+```{r}
+
+str(ArrestMarij)
+
+```
+
+#### Lets do a summary statistic of the whole dataset to see the Means, Medians, Quartiles, Min, and Max for each variables. Only integer variables will be statistically summarized. These variables are age, year, and checks. See the summary results below. For example, the age variable which minimum age is 12 and maximum age is 66 arrested for possession of marijuana. The checks variable mean is 1.6. This means that out of this 5,226 individuals (observations), each individual has average 1.6 previous arrest records.
+
+```{r}
+
+summary(ArrestMarij)
+
+```
+
+### Data cleanup, analysis, and discussions.
+
+#### By looking at the figure 1 and 2 and the table 1, you will notify that age group between 15 to 24 has the largest number of arrests of marijuana possession. The figure 3 also shows that the age group between 15 to 24 which number of arrests, because of other crimes, was significantly larger than other age group.
+
+```{r, warning = FALSE, message=FALSE}
+
+## Histogram of age:- Figure 1
+
+hist(ArrestMarij$age, main="Total Marijuana Possession Arrests at Each Age", xlab="Age", ylab="Total Arrests", ylim=c(0,2500), col=rainbow(30))
+
+## Create age group.
+labs <- c(paste(seq(0, 95, by=5), seq(0+5-1, 100-1, by=5), sep="-"), paste(100, "+", sep=""))
+
+ArrestMarij$AgeGroup <- cut(ArrestMarij$age, breaks = c(seq(0, 100, by = 5), Inf), labels = labs, right = FALSE)
+
+## Group by age group and then count the arrests.  
+AgeGroup_tbl <- ArrestMarij %>% group_by(AgeGroup) %>% summarize(
+TotalMarijuanaArrests=length(colour), TotalPreviousArrests=sum(checks), TotalArrests=TotalMarijuanaArrests+TotalPreviousArrests)
+
+## Display the top 5 Age Group for Marijuana Possession Arrests:- Table 1 
+head(arrange(AgeGroup_tbl, desc(TotalMarijuanaArrests)), n=5) 
+
+## GGPlot Histogram for Age Group vs. TotalMarijuanaArrests:- Figure 2
+ggplot(AgeGroup_tbl, aes(x=AgeGroup, y=TotalMarijuanaArrests)) + geom_histogram(stat="identity", fill="hotpink") + xlab("Age Group") + ylab("Total Arrests") + ggtitle("Age Group vs. Total Marijuana Possession Arrests") + theme(plot.title = element_text(hjust=0.5), axis.title.x = element_text(size=11, face="bold"),
+axis.title.y = element_text(size=11, face="bold"), axis.text.x = element_text(face="bold"), axis.text.y = element_text(face="bold")) + ylim(0,2000)
+
+## GGPlot Histogram for Age Group vs. Previous Arrests:- Figure 3
+ggplot(AgeGroup_tbl, aes(x=AgeGroup, y=TotalPreviousArrests)) + geom_histogram(stat="identity", fill="hotpink") + xlab("Age Group") + ylab("Previous Arrests") + ggtitle("Age Group vs. Previous Arrests") + theme(plot.title = element_text(hjust=0.5), axis.title.x = element_text(size=11, face="bold"),
+axis.title.y = element_text(size=11, face="bold"), axis.text.x = element_text(face="bold"), axis.text.y = element_text(face="bold")) + ylim(0,3000)
+
+```
+
+#### In the figure 4 below, you can see that the trend pattern for both marijuana possession arrests and previous arrest records are very identical. The age between 15 to 24 has the largest amount of arrests and decreasing as getting older.
+
+```{r}
+
+## Scatter Plot of marijuana arrests vs. previous arrests: - Figure 4
+
+AgeMarijArrests_tbl <- ArrestMarij %>% group_by(age) %>% summarize(MarijArrests=length(colour))
+AgePreviousArrests_tbl <- ArrestMarij %>% group_by(age) %>% summarize(PreviousArrests=sum(checks))
+
+ggplot(NULL) + geom_point(data=AgeMarijArrests_tbl, aes(x=age, y=MarijArrests, color="Marijuana Arrests")) + ggtitle("Marijuana Possession Arrests vs. Previous Arrests") + xlab("Age") + ylab("Total Arrests") + geom_line(data=AgePreviousArrests_tbl, aes(x=age, y=PreviousArrests, color="Previous Arrests")) + xlab("Age") + ylab("Total Arrests") + theme(plot.title = element_text(hjust=0.5), axis.title.x = element_text(size=11, face="bold"),
+axis.title.y = element_text(size=11, face="bold"), axis.text.x = element_text(face="bold"), axis.text.y = element_text(face="bold")) + scale_fill_manual(values=c("Marijuana Arrests"="red", "Previous Arrests"="darkblue")) + theme(legend.title=element_blank())
+
+```
+
+#### From the figure 5 and table 2 below, you can see the total number of white arrests was triple the black. This shows us that white individuals were much more likely to have been arrested for marijuana possession. This also means that out of 10 marijuana possession arrests, about 7.5 arrests would be white individuals. Also, from the figure 6 and table 3, it shows the white total arrest was increase every year from 1997 to 2000 but starting to drop a bit in 2001 and dropped sharply in 2002. I believe the year 2002 data is incomplete that is why the total arrests was significantly less than previous year.
+
+```{r}
+
+## Bar plot of white vs. black:- Table 2 & Figure 5
+WhiteCount <- length(which(ArrestMarij$colour=="White"))
+BlackCount <- length(which(ArrestMarij$colour=="Black"))
+BlackWhiteTable <- matrix(c(WhiteCount,BlackCount),ncol=2,nrow=1,byrow=TRUE)
+dimnames(BlackWhiteTable) = list(c("Total of Arrests"), c("White", "Black"))
+
+barplot(BlackWhiteTable, beside=T,las=0.5, cex.names=1.2,cex.axis=1.0, ylab="Total of Arrests", axes=FALSE, ylim=c(0,4500), cex.lab=1.1, main="White vs. Black", col=c("blue","red"))
+axis(2, at = seq(0, 4500, 500), las = 0.9)
+BlackWhiteTable
+
+## Scatter Plot of year vs. black & white:- Table 3 & Figure 6
+YearWhiteBlackCount_tbl <- ArrestMarij %>% group_by(year) %>% summarize(WhiteArrests=length(which(colour=="White")), BlackArrests=length(which(colour=="Black")))
+
+names(YearWhiteBlackCount_tbl) <- sub("^year$", "Year", names(YearWhiteBlackCount_tbl))
+YearWhiteBlackCount_tbl
+
+YearWhiteBlackCount_tbl <-  transform(YearWhiteBlackCount_tbl, Year = as.Date(as.character(Year), "%Y"))
+
+plot(YearWhiteBlackCount_tbl$WhiteArrests~as.Date(YearWhiteBlackCount_tbl$Year, "%y"),type="b", col="red", lty=2, main="Year Vs White & Black Arrests", xlab="Year", ylab="Arrests", ylim=c(0,1200), pch=19)
+lines(YearWhiteBlackCount_tbl$BlackArrests~as.Date(YearWhiteBlackCount_tbl$Year, "%y"), type="b", col="green", pch=18)
+legend("topright", lty=c(2,1), legend=c("White", "Black"), col=c("red", "green"), cex=0.8, text.font=4)
+
+```
+
+#### From the figure 7 below, it is very obvious that "ZERO" on previous records of arrest would have much higher chance of getting released on summons and would be more likely to get into custody when the number previous records of arrest was high.
+
+```{r}
+
+## Scatter plot of released vs. previous records:- Figure 7
+ReleasedCustodyRecord_tbl <- ArrestMarij %>% group_by(checks) %>% summarize("Released"=length(which(released=="Yes")), "Custody"=length(which(released=="No")))
+
+names(ReleasedCustodyRecord_tbl) <- sub("^checks$", "PreviousArrests", names(ReleasedCustodyRecord_tbl))
+
+ggplot(NULL) + geom_line(data=ReleasedCustodyRecord_tbl, aes(x=PreviousArrests, y=Released, color="red")) + ggtitle("Released vs Previous Records") + xlab("Previous Records") + ylab("Total Released") + theme(plot.title = element_text(hjust=0.5), axis.title.x = element_text(size=11, face="bold"),
+axis.title.y = element_text(size=11, face="bold"), axis.text.x = element_text(face="bold"), axis.text.y = element_text(face="bold")) + theme(legend.position = "none")
+
+```
+
+#### It is good to know whether the released on summons has any correlation with other factors. From the conditional distribution table 4 and figure 8, both shows that black individuals was at 26% released rate as compared to the white at 14%. And the white was 10% more likely not be able to be released on summons as compared to the black.
+
+```{r}
+
+## Group by released and then count the white and black arrests.
+ReleasedSummonsRace_tbl <- ArrestMarij %>% group_by(released) %>% summarize(White=length(which(colour=="White")), Black=length(which(colour=="Black")))
+
+## Create into a table.
+ReleasedSummonsRace_tbl2 <- matrix(c(ReleasedSummonsRace_tbl$White, ReleasedSummonsRace_tbl$Black), ncol=2)
+colnames(ReleasedSummonsRace_tbl2) <- c("White", "Black")
+rownames(ReleasedSummonsRace_tbl2) <- c("Released", "Custody")
+ReleasedSummonsRace_tbl2 <- as.table(ReleasedSummonsRace_tbl2)
+
+## Conditional Distribution: Table 4 and Figure 8
+round(prop.table(ReleasedSummonsRace_tbl2,2)*100, digits=2)
+barplot(prop.table(ReleasedSummonsRace_tbl2,2)*100, beside=T, ylab="%", ylim=c(0,100), main=" Released or Custody by Race", col=c("mediumspringgreen", "lightslateblue"))
+legend("center", legend = c("Released", "Custody"), fill = c("mediumspringgreen", "lightslateblue"),cex=0.85)
+
+```
+ 
+#### From the figure 9 and tale 5 below, you can see there are not much different between getting a released on summons vs gender.
+
+```{r}
+
+## Group by released and then count the gender.
+ReleasedSummonsGender_tbl <- ArrestMarij %>% group_by(released) %>% summarize(Male=length(which(sex=="Male")), Female=length(which(sex=="Female")))
+
+## Create into a table.
+ReleasedSummonsGender_tbl2 <- matrix(c(ReleasedSummonsGender_tbl$Male, ReleasedSummonsGender_tbl$Female), ncol=2)
+colnames(ReleasedSummonsGender_tbl2) <- c("Male", "Female")
+rownames(ReleasedSummonsGender_tbl2) <- c("Custody", "Released")
+ReleasedSummonsGender_tbl2 <- as.table(ReleasedSummonsGender_tbl2)
+
+## Conditional Distribution: Table 5 and Figure 9
+round(prop.table(ReleasedSummonsGender_tbl2,2)*100, digits=2)
+barplot(prop.table(ReleasedSummonsGender_tbl2,2)*100, beside=T, ylab="%", main=" Released or Custody by Gender", ylim=c(0,100), col=c("hotpink", "lightgreen"))
+legend("center", legend = c("Custody", "Released"), fill = c("hotpink", "lightgreen"),cex=0.85)
+
+```
+
+#### From the figure 10 and tahle 6 below, you can see that unemployment individuals have larger amount in custody and smaller amount in released on summons; therefore, they would have higher chance of not succeed in getting released on summons as compared to those who were employed.
+
+```{r}
+
+## Group by released and then count the employment status.
+ReleasedSummonsEmploy_tbl <- ArrestMarij %>% group_by(released) %>% summarize(Employed=length(which(employed=="Yes")), Unemployed=length(which(employed=="No")))
+
+## Create into a table.
+ReleasedSummonsEmploy_tbl2 <- matrix(c(ReleasedSummonsEmploy_tbl$Employed, ReleasedSummonsEmploy_tbl$Unemployed), ncol=2)
+colnames(ReleasedSummonsEmploy_tbl2) <- c("Employed", "Unemployed")
+rownames(ReleasedSummonsEmploy_tbl2) <- c("Custody", "Released")
+ReleasedSummonsEmploy_tbl2 <- as.table(ReleasedSummonsEmploy_tbl2)
+
+## Conditional Distribution: Table 6 and Figure 10
+round(prop.table(ReleasedSummonsEmploy_tbl2,2)*100, digits=2)
+barplot(prop.table(ReleasedSummonsEmploy_tbl2,2)*100, beside=T, ylab="%", main=" Released or Custody by Employment Status", ylim=c(0,100), col=c("deepskyblue", "deeppink"))
+legend("center", legend = c("Custody", "Released"), fill = c("deepskyblue", "deeppink"),cex=0.85)
+
+```
+
+#### From the figure 11 and table 7 below, you can see the same thing like the above employment status analysis. Individuals who were citizen have higher chance of getting released on summons as compared to those who were non citizen.
+
+```{r}
+
+## Group by released and then count the citizenship status.
+ReleasedSummonsCitiz_tbl <- ArrestMarij %>% group_by(released) %>% summarize(Citizen=length(which(citizen=="Yes")), NonCitizen=length(which(citizen=="No")))
+
+## Create into a table.
+ReleasedSummonsCitiz_tbl2 <- matrix(c(ReleasedSummonsCitiz_tbl$Citizen, ReleasedSummonsCitiz_tbl$NonCitizen), ncol=2)
+colnames(ReleasedSummonsCitiz_tbl2) <- c("Citizen", "Non Citizen")
+rownames(ReleasedSummonsCitiz_tbl2) <- c("Custody", "Released")
+ReleasedSummonsCitiz_tbl2 <- as.table(ReleasedSummonsCitiz_tbl2)
+
+## Conditional Distribution: - Table 7 and Figure 11
+round(prop.table(ReleasedSummonsCitiz_tbl2,2)*100, digits=2)
+barplot(prop.table(ReleasedSummonsCitiz_tbl2,2)*100, beside=T, main=" Released or Custody by Citizenship Status", ylab="%", ylim=c(0,100), col=c("deepskyblue", "darkorchid1"))
+legend("center", legend = c("Custody", "Released"), fill = c("deepskyblue", "darkorchid1"),cex=0.85)
+
+```
+
+#### Table 8 shows the summary of total arrests for all variables by age group. You can clearly see that from age 15-24 accounts for majority of the arrests for each variable. The figure 12 shows the variation of arrests for each variable spread across each age group. The released, white, male, employed, and citizen variables which total arrests variation are much larger than others.
+
+```{r}
+
+## Summary for all variables group by age group:- Table 8
+Age_tbl <- ArrestMarij %>% group_by(AgeGroup) %>% summarize("Released"=length(which(released=="Yes")), "Custody"=length(which(released=="No")), "White"=length(which(colour=="White")), "Black"=length(which(colour=="Black")), "Male"=length(which(sex=="Male")), "Female"=length(which(sex=="Female")), "Employed"=length(which(employed=="Yes")), "Unemployed"=length(which(employed=="No")), "Citizen"=length(which(citizen=="Yes")), "Non Citizen"=length(which(citizen=="No")))
+
+head(arrange(Age_tbl, desc(Released))) 
+
+## Box plot for each variables: Figure 12
+Age_tbl2 <- melt(Age_tbl, id.vars=c("AgeGroup"))
+ggplot(Age_tbl2, aes(x=reorder(factor(variable),value, fun=median),y=value,fill=factor(variable))) + geom_boxplot() + labs(title="Marijuana Possession Arrests by Different Variables") + ylab("Total Arrests") + theme(legend.position = "none", axis.title.x = element_blank(), axis.text.x=element_text(angle=45)) + theme(plot.title = element_text(hjust=0.5)) + theme(axis.text.x = element_text(margin = margin(t = 20, r = 20, b = 0, l = 0)))
+
+```
+
+### Conclusions.
+
+#### **Based on all the analysis done above, it can be concluded that the white individuals have significantly larger arrests of marijuana possession as compared to the black individuals. Also, the released on summons favor those individuals who had zero or less arrest records, were employed, and were citizen of Canada. Lastly, individuals who were white, male, employed, citizen, and age between 15-24 were arrested more often than other because the analysis shows that this particular group of individuals has much higher chance of marijuana possession on them.**
+
