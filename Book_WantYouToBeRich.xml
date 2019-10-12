@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bookstore>
+  <book category="Personal Finance">
+    <title>Why We Want You To Be Rich</title>
+    <author>Donald J. Trump, Robert T. Kiyosaki</author>
+    <attributes1>rich are getting richer</attributes1>
+    <attributes2>you cannot solve money problems with money</attributes2>
+    <attributes3>middle class is disappearing and America is becoming a two-class society</attributes3>
+  </book>
+</bookstore>
