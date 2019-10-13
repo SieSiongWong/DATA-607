@@ -1,0 +1,38 @@
+---
+title: "Assignment 7"
+author: "Sie Siong Wong"
+date: "10/11/2019"
+output: html_document
+---
+
+## Below 3 data frames are identical. They all load the information within each file type (HTML, XML, JSON).
+
+#### **Load HTML file.**
+
+```{r, eval=TRUE, warning=FALSE}
+
+StrengthsFinder <- readLines("https://raw.githubusercontent.com/SieSiongWong/DATA-607/master/Book_StrengthsFinder2.0.htm")
+StrengthsFinder
+
+```
+
+
+#### **Load XML file.**
+
+
+```{r, eval=TRUE, warning=FALSE}
+
+WantYouToBeRich <- readLines("https://raw.githubusercontent.com/SieSiongWong/DATA-607/master/Book_WantYouToBeRich.xml")
+WantYouToBeRich
+
+```
+
+
+#### **Load JSON file.**
+
+
+```{r, eval=TRUE, warning=FALSE}
+
+SuccessStory <- readLines("https://raw.githubusercontent.com/SieSiongWong/DATA-607/master/Book_SuccessStory.json")
+SuccessStory
+```
