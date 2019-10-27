@@ -1,0 +1,85 @@
+---
+title: "Assignment 9"
+author: "Sie Siong Wong"
+date: "10/24/2019"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    toc_collapsed: true
+theme: lumen
+---
+
+## Load R Packages
+
+```{r, eval=TRUE, message=FALSE}
+
+library(httr)
+library(jsonlite)
+library(dplyr)
+library(tidyr)
+library(stringr)
+
+```
+
+## Call New York Times Movies API
+
+```{r, eval=TRUE}
+
+# Set a URL with API key.
+URL <- "https://api.nytimes.com/svc/movies/v2/reviews/all.json?api-key=FkAGivNSg3efOG9ZUOK4EoIc2ZJE137C"
+
+# Using GET method to get movies reviews dataset.
+nytimes.movies <- GET(URL)
+
+# Checking response from New Times API.
+nytimes.movies
+
+# Stop if status code other than 200.
+stop_for_status(nytimes.movies)
+
+# Content for the JSON data.
+nytimes.movies <-rawToChar(nytimes.movies$content)
+
+```
+
+## Transform into Data Frame
+
+```{r, eval=TRUE}
+
+# Read in all of the JSON data.
+nytimes.movies.list <- fromJSON(nytimes.movies)
+
+# Convert to data frame.
+nytimes.movies.df <- as.data.frame(nytimes.movies.list$results)
+
+# Display the data frame.
+nytimes.movies.df
+
+```
+
+
+## Clean and Tidy the Data
+
+```{r, eval=TRUE, message=FALSE}
+
+# Remove some columns.
+nytimes.movies.df <- nytimes.movies.df[, -c(6,8,9,11)]
+
+# Update columns name.
+nytimes.movies.df <- nytimes.movies.df %>% rename("Movie Titles"="display_title", "Rating"="mpaa_rating", "Critics Pick"="critics_pick", "Reviewer"="byline", "Review Headline"="headline", "Publication Date"="publication_date", "Link"="link")
+
+# Reorder the publication date column to first column.
+nytimes.movies.df <- nytimes.movies.df %>% select('Publication Date', everything())
+
+# Extract the link URL.
+nytimes.movies.df <- nytimes.movies.df %>% mutate(Link=unlist(str_extract_all(nytimes.movies.df$Link, "http\\:.*?\\.htm")))
+
+# Replace empty vector components with NA.
+is.na(nytimes.movies.df) <- nytimes.movies.df == ""
+
+# Display the final dataframe.
+nytimes.movies.df
+
+
+```
