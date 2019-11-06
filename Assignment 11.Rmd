@@ -1,0 +1,48 @@
+---
+title: "Assignment 11"
+author: "Sie Siong Wong"
+date: "11/4/2019"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    toc_collapsed: true
+theme: lumen
+---
+
+## Objective
+
+- Analyze an existing recommender system. In this assignment/discussion, I will select Target recommender system to analyze.
+
+## Scenario Design Analysis
+
+### Target users
+
+- Who are the target users? Their target users will be any consumers who are interested to buy multiple related items in one order, explore more related items, similar items or what other guests also bought.
+
+### Key goals
+
+- What are consumers key goals? Their key goals is very simple. They want convenience. They want to see only highly relevance items. They don't want to be overloaded with many irrelevant products in a page. They desire to buy everything they want at a single place without spending too much times searching around either on a single website or google it and get from another website.
+
+### Accomplishment
+
+- How can Target help to accomplish those goals? On the product page after customer selects an item, it shows items frequently bought together for the same brand. This way it helps to reduce customers times to search again for related items and also helps to remind customer to buy items which they may have already run out at home.  There are other recommendation sections that giving customers options to explore what other related products, similar items, or see what other customers also bought together with this item. Therefore, I would say that Target has provided a good recommender system that has fulfilled customers' needs in term of shopping convenient.
+
+### Perform scenario design twice
+
+- I think it makes sense to perform scenario design twice, once for the organization and once for the organization's customers. As in previous section already explains the scenario design for the customers. Here, I would just focus on what scenario design we can do for the organization and in this case it will be Target online retail store. For the first design question, the target users will be Target's customers. The goals of design the recommerder system is to get customers to buy more through their online store. In order to get them buy more products, the recommender system need to precisely recommend highly relevant products to customers.
+
+## Reverse Engineer
+
+- The Target.com recommender system is obviously using collaborative filtering recommendation algorithms. However, it is not using the traditional way but similar to what other major online retail stores use like Amazon.com, Walmart.com, etc., which is item based collaborative filtering. 
+
+- There are many advantages to use item based versus other ways such as user based because items will always be items. Items do not change as much people do. So, the relationship between items are more permanent and more direct comparison we can make when compare similarity between items because they do not change over times. Aslo, you can save a lot of computation resources by evaluating relationship between items instead of customers because you probably have few items than number of customers in your system. This way, the system can run recommendation more frequently, make them more current, more up to date and better and able to use more complicated algorithms because you have less relationships to compute. Furthermore, item based method is based on people actually spending money, so you always going to get better and more reliable results when your based recommendation on people actually bought as opposed to what they view and what they click on.
+
+- At Target.com after a customer search an item and select, will navigate to the product page. This is where the recommender system will run the job to recommend other related products to customers. The recommender system comprise of 4 recommendation sections. The top one is the "frequently bought together" and it shows only the top 3 rated items. If customers want to explore more related items, they can go to "More to Consider" section. Or if customers just want to see similar items, they can go to "Similar Items". The recommender system also show what other customers also bought when buying that item.
+
+## Improvements
+
+- One of the improvement recommendations for the Target's recommender system is to include the product ratings for recommended items. This way will make customers feel much more confident on making the right decision to purchase the recommended products along with the selected items. At the same time, it will help to build trust, loyalty and eventually increase sales. As a Target customer myself, I would like to see recommended products' ratings being displayed because it makes me feels more comfortable to buy it. Other big online retail stores like Amazon and Walmart they all have the recommended products' ratings displayed. Another recommendation that I would like suggest here is to change the recommender system interface. Currently, its interface is just too simple and can be optimized to attract more customers to select more products into their shopping cart. One of my suggestions on interface design is to move the recommender system up before the product details section. This way customers will first see the recommended products versus the product details, or the product details can be minimized and has option to expand. Usually it will increase the chance to buy when people first see related products instead of later. Learning algorithms generally improve and become more accuracy with more and better data. So, it is important to make an appealing interface to effectively shape and improve the implicit feedback data that is generated in order to improving accuracy of recommendations. 
+
+
+
