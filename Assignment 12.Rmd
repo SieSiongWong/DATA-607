@@ -1,0 +1,154 @@
+---
+title: "Assignment 12"
+author: "Sie Siong Wong"
+date: "11/12/2019"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    toc_collapsed: true
+theme: lumen
+---
+
+## Load the R Packages
+
+```{r, eval=TRUE, message=FALSE}
+
+library(RMariaDB)
+library(mongolite)
+library(dplyr)
+library(ggplot2)
+
+```
+
+## Load the Data from MySQL
+
+### Database Connection
+
+```{r, eval=TRUE}
+
+# Connecting to the database
+user_name <- 'sie siong'
+user_password <- "redy2rok"
+database <- 'prj3'
+host_name <- 'msds607.ckxhi71v1dqf.us-east-1.rds.amazonaws.com'
+
+mydb_sql <- dbConnect(RMariaDB::MariaDB(), user=user_name, password=user_password, dbname=database, host=host_name)
+mydb_sql
+
+```
+
+### View Database Tables
+
+```{r, eval=TRUE}
+
+# List of tables.
+dbListTables(mydb_sql)
+
+```
+
+### View Tables Data
+
+```{r, eval=TRUE}
+
+# Select one table to migrate.
+sql_tbl <- dbGetQuery(mydb_sql, "select * from df")
+
+head(sql_tbl, n=15)
+tail(sql_tbl, n=15)
+
+```
+
+## Migrate Data to MongoDB
+
+```{r, eval=TRUE}
+
+# Database Connection and Creation
+mydb_mongo <- mongo(collection = "sql_tbl", db = "DataScienceSkills", url = "mongodb://localhost", verbose = FALSE, options = ssl_options())
+mydb_mongo$insert(sql_tbl)
+
+# Check if we have inserted the “slq-tbl” data.
+mydb_mongo$count()
+
+```
+
+### Formatting the Data
+
+```{r, eval=TRUE}
+
+# Display 3 records.
+mydb_mongo$iterate()$batch(3)
+
+# Count how many distinct skills.
+length(mydb_mongo$distinct("skills"))
+
+# Aggregate the skills and count
+df <- mydb_mongo$aggregate('[{"$group":{"_id":"$skills", "count": {"$sum":"$count"}}}]', options = '{"allowDiskUse":true}')
+
+# Rename the column names.
+names(df) <- c("skills", "count")
+
+# Select only the skills with count greater than 200.
+df <- filter(df, count > 200)
+
+# Sort the count column.
+df <- arrange(df, desc(count))
+
+# Display the result.
+head(df)
+
+```
+
+### Visualizing the Data
+
+```{r, eval=TRUE}
+
+# Plot the result.
+ggplot(df, aes(x=reorder(skills, count, fun=max), y=count))+
+  geom_bar(stat="identity", width = 0.5, fill=("tomato2"))+
+             theme(axis.text.x = element_text(angle = 65, vjust=0.6), axis.title.x = element_blank())
+
+```
+
+## SQL vs NoSQL
+
+### Advantages
+
+SQL Databses: The primary advantages are
+
+- It uses a single uniform language (DDL) for different roles (developer, user, DBA).
+
+- Unlike the NoSQL, SQL doesn’t have the issue of standardization. It follows the ISI and ANSI standards, which are approved across the globe.
+
+- It uses an advanced and non-structural querying language.
+
+- It sticks to ACID principles (atomicity, consistency, isolation, durability), thus guaranteeing stability, security, and predictability both of the entire database and every transaction in particular.
+
+
+NoSQL Databases: Some of the biggest advantages are
+
+- They are non-relational (table-less), hence, very different from SQL databases. This means they are easier to manage and they provide a higher level of flexibility with newer data models.
+
+- They are mostly open source and low-cost. This makes them an appealing solution for smaller organizations with limited budgets. The top NoSQL databases on the market today such as MongoDB, MarkLogic, etc., allow for rapid processing of real-time Big Data applications in ways that are affordable.
+
+- They are easier scalability through support for map reduce. The elastic scalability of NoSQL often used as a major selling point.
+
+- The non-relational nature of a NoSQL database allows database architects to quickly create a database without needing to develop a detailed database model. This saves a lot of development time.
+
+
+### Disadvantages
+
+SQL Databases: The primary drawbacks are
+
+- It is very difficult to scale as much as a database grows larger.
+
+- It was designed to handle the number of transactions modern databases have to deal with every second. Giants like Amazon or Alibaba deal with staggering amounts of data that will choke an SQL in a matter of minutes.
+
+
+NoSQL Databases: Some of the biggest disadvantages
+
+- Their community is not as well defined. The NoSQL community is relatively new and lacks the maturity of the MySQL user base. Even though NoSQL is growing rapidly, but for now MySQL is hard to beat for its vast network of highly experienced end users.
+
+- A major problem with NoSQL databases is the lack of reporting tools for analysis and performance testing. However, with MySQL, you can find a wide array of reporting tools to help you prove your application’s validity.
+
+- NoSQL databases need a standard query language like SQL. This is a major issue highlighted by researchers at Microsoft, who claim that NoSQL’s lack of standardization can cause a problem during migration. 
