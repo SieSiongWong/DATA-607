@@ -1,0 +1,226 @@
+---
+title: "Project 4"
+author: "Sie Siong Wong"
+date: "11/13/2019"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    toc_collapsed: true
+theme: lumen
+---
+
+In this document classification project, I am using the classified data getting from https://spamassassin.apache.org/old/publiccorpus/ to train and test prediction models from different classification algorithms and then evaluate which algorithm(s) will perform better to accurately predict whether a new document (email) is spam or ham.
+
+
+## Load the R Packages
+
+```{r, eval=TRUE, message=FALSE, warning=FALSE}
+
+library(tm)
+library(caret)
+library(arm)
+library(e1071)
+library(minqa)
+library(ranger)
+library(SnowballC)
+library(plyr)
+library(dplyr)
+
+```
+
+## Load the Data
+
+```{r, eval=TRUE, warning=FALSE}
+
+# Working directories for spam and ham data.
+ham <- "./ham"
+spam <- "./spam"
+
+# Load the spam and ham data and create corpus for each.
+ham <- VCorpus(DirSource(ham))
+spam <- VCorpus(DirSource(spam))  
+
+# Number of documents for ham.
+length(ham)
+
+# Number of document for spam.
+length(spam)
+
+```
+
+## Data Preparation and Preprossesing
+
+### Document Term Matrix
+
+```{r, eval=TRUE, message=FALSE, warning=FALSE}
+
+# Create new spam and ham corpus for document term matrix.
+ham_tdm <- VCorpus(VectorSource(ham))
+spam_tdm <- VCorpus(VectorSource(spam))
+
+# Random sampling 250 samples from thousands corpus to reduce number of corpus to classify due to computing power limitation on my pc.
+set.seed(123)
+ham_tdm <- sample(ham_tdm, 250)
+set.seed(456)
+spam_tdm <- sample(spam_tdm, 250)
+
+# Convert the text to lowercase.
+ham_tdm <- tm_map(ham_tdm, content_transformer(tolower))
+ham_tdm <- tm_map(ham_tdm, PlainTextDocument)
+spam_tdm <- tm_map(spam_tdm, content_transformer(tolower))
+spam_tdm <- tm_map(spam_tdm, PlainTextDocument)
+
+# Remove all punctuation from the corpus.
+ham_tdm <- tm_map(ham_tdm, removePunctuation)
+spam_tdm <- tm_map(spam_tdm, removePunctuation)
+
+# Remove all English stopwords from the corpus.
+ham_tdm <- tm_map(ham_tdm, removeWords, stopwords("en"))
+spam_tdm <- tm_map(spam_tdm, removeWords, stopwords("en"))
+
+# Remove all number from the corpus.
+ham_tdm <- tm_map(ham_tdm, removeNumbers)
+spam_tdm <- tm_map(spam_tdm, removeNumbers)
+
+# Strip extra white spaces in the corpus.
+ham_tdm <- tm_map(ham_tdm, stripWhitespace)
+spam_tdm <- tm_map(spam_tdm, stripWhitespace)
+
+# Stem the words in the corpus.
+ham_tdm <- tm_map(ham_tdm, stemDocument)
+spam_tdm <- tm_map(spam_tdm, stemDocument)
+
+# Build document term matrix.
+ham_tdm <- DocumentTermMatrix(ham_tdm)
+spam_tdm <- DocumentTermMatrix(spam_tdm)
+
+# Remove sparse terms which don't appear very often. Limit the document term matrix to contain terms appearing in at least 5% of documents.
+ham_tdm <- removeSparseTerms(ham_tdm, 0.95)
+spam_tdm <- removeSparseTerms(spam_tdm, 0.95)
+
+```
+
+### Dataset Transformation
+
+Convert the spam and ham document term matrix dataset to dataframe and assign a classification (factor) to each document.
+
+```{r, eval=TRUE, message=FALSE, warning=FALSE}
+
+# Label "0" for ham.
+ham_trfm <- as.matrix(ham_tdm)
+ham_trfm <- cbind(ham_trfm, 0)
+colnames(ham_trfm)[ncol(ham_trfm)] <-'spamorham'
+
+# Label "1" for spam.
+spam_trfm <- as.matrix(spam_tdm)
+spam_trfm <- cbind(spam_trfm, 1)
+colnames(spam_trfm)[ncol(spam_trfm)] <-'spamorham'
+
+# Combine both transformed spam and ham dataset.
+spamham_trfm <- rbind.fill.matrix(ham_trfm, spam_trfm)
+
+# Convert the combined spam and ham dataset to dataframe.
+spamham_trfm<- as.data.frame(spamham_trfm)
+
+# Turn the classification '0' and '1' labels into factor.
+spamham_trfm$spamorham <- as.factor(spamham_trfm$spamorham)
+
+# Replace NA values generated from using the rbind.fill.matrix with "0". The NA auto-generated because combine rows from two datasets which number of columns is different. The NA values should be 0 frequency because in fact the terms (variables) does not exist for those documents.
+spamham_trfm[is.na(spamham_trfm)] <- 0
+
+head(spamham_trfm, n=1)
+
+```
+
+### Split the Dataset into Training and Testing Set
+
+```{r, eval=TRUE, message=FALSE, warning=FALSE}
+
+# Split the dataset into training and testing set.
+set.seed(567)
+spamham_trfm_index <- sample(1:nrow(spamham_trfm), 0.9 * nrow(spamham_trfm))
+spamham_train <- spamham_trfm[spamham_trfm_index, ]
+spamham_test <- spamham_trfm[-spamham_trfm_index, ]
+
+```
+
+## Train Prediction Model
+
+### Generalized Linear Model
+
+```{r, eval=TRUE, message=FALSE, warning=FALSE}
+
+# Train the model using random forest method.
+spamham_gl_mdl <- train(spamorham ~ ., data = spamham_train, method = 'glm')
+spamham_gl_mdl
+
+```
+
+### Bayesian GLM
+
+```{r, eval=TRUE, message=FALSE, warning=FALSE}
+
+# Train the model using bayesian generalized linear method.
+spamham_by_mdl <- train(spamorham ~ ., data = spamham_train, method = 'bayesglm')
+spamham_by_mdl
+
+```
+
+### Random Forest
+
+```{r, eval=TRUE, message=FALSE, warning=FALSE}
+
+# Train the model using random forest method.
+spamham_rf_mdl <- train(spamorham ~ ., data = spamham_train, method = 'ranger')
+spamham_rf_mdl
+
+```
+
+## Test Prediction Model
+
+### Generalized Linear Model
+
+```{r, eval=TRUE, message=FALSE, warning=FALSE}
+
+# Predict the outcome on a test set.
+spamham_gl_pred <- predict(spamham_gl_mdl, newdata = spamham_test)
+spamham_gl_pred
+
+# Compare predicted outcome and true outcome.
+confusionMatrix(spamham_gl_pred, spamham_test$spamorham)
+
+```
+
+### Bayesian
+
+```{r, eval=TRUE, message=FALSE, warning=FALSE}
+
+# Predict the outcome on a test set.
+spamham_by_pred <- predict(spamham_by_mdl, newdata = spamham_test)
+spamham_by_pred
+
+# Compare predicted outcome and true outcome.
+confusionMatrix(spamham_by_pred, spamham_test$spamorham)
+
+```
+
+### Random Forest
+
+```{r, eval=TRUE, message=FALSE, warning=FALSE}
+
+# Predict the outcome on a test set.
+spamham_rf_pred <- predict(spamham_rf_mdl, newdata = spamham_test)
+spamham_rf_pred
+
+# Compare predicted outcome and true outcome.
+confusionMatrix(spamham_rf_pred, spamham_test$spamorham)
+
+```
+
+## Discussion
+
+From each of the confusion matrix result, we can see that the Bayesian GLM and Random Forest methods outperformed Generalized Linear Model, obtaining an impressive accuracy of 100% on the test set. The Genelized Linear Model which prediction accuracy is only 74%. So, it is better to either use Bayesian GLM or Random Forest to classify emails into spam (1) and ham (0) to completely avoid especially false positive cases to happen because it is more costly. User might completely miss an important email due to it being delivered to the spam folder as compared to false negative that user will need to delete the unsolicited emails.
+
+If my laptop has more computing power, I will analyze more samples and compare with more classification methods such as CART model, SVM, decision tree, and so on. Above results, it took about 1 and half hours to generate.
+
